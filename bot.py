@@ -2,42 +2,46 @@ import os
 import discord
 from discord import Intents
 from discord.ext import commands
+from discord.utils import get
 from dotenv import load_dotenv
+from rich import console
+from rich.console import Console
 
+from Tools.utils import get_prefix
+
+console = Console()
 load_dotenv()
 
 intents = Intents.default()
 
-bot = commands.Bot(command_prefix = "chotu",
+bot = commands.Bot(command_prefix = get_prefix,
                    intents = intents,
                    case_insensitivity = True,
                    strip_after_prefix = True)
 
 
-cogs = {
-
-}
-
-
-def load_cogs(cogs: dict) -> None:
-    """ Function to load cogs from dict """
-    for key, value in cogs.item():
+# Loading Cogs
+for cog in os.listdir("cogs"):
+    if cog.startswith("__pycache__"):
+        console.log("Skipping __pycache__ folder")
+    else:
         try:
-            bot.load_extension(value)
-            print(f"Loaded {key}!")
+            bot.load_extension(f"cogs.{cog[:-3]}")
+            console.log(f"Loaded {cog[:-3]} ✅")
         except Exception as e:
-            print(f"Some error occured while loading {key}")
-            print(f"Error: {e}")
+            console.log(f"Failed to load {cog[:-3]}, error: {e}")
 
 @bot.event
 async def on_message(message):
     if bot.user.mentioned_in(message):
-        await message.channel.send('My Prefix is : `chotu`')
+        prefix = get_prefix(bot, message)
+        await message.channel.send(prefix)
+    await bot.process_commands(message)
 
 
 @bot.event
 async def on_ready():
-    print(f"{bot.user} is active now ✅")
+    console.log(f"{bot.user} is active now ✅")
     await bot.change_presence(
         activity=discord.Activity(
             type=discord.ActivityType.playing,
